@@ -20,7 +20,7 @@ If qz.Connect(dbOracle, "Src", "Usr", "PW").IsConnect Then
 End If
 ```
 
-You can use chainmethod to shorten this.
+You can use method chaining to shorten this.
 
 ```VBS
 Dim qz As New Quetzal
