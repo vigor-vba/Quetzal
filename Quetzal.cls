@@ -168,20 +168,28 @@ Public Property Get Recordmap() As Variant
     Dim r        As Long    '
     Dim c        As Long    '
 
-    If Not rec_ Is Nothing Then
-        recRows = rec_.RecordCount - 1
-        recCols = rec_.Fields.Count - 1
-
-        ReDim recmap(recRows, recCols) As String
-        r = 0
-        Do Until rec_.EOF
-            For c = 0 To recCols
-                recmap(r, c) = rec_.Fields(c) & ""
-            Next c
-            r = r + 1
-            Call rec_.MoveNext
-        Loop
+    If rec_ Is Nothing Then
+        Recordmap = Empty
+        Exit Function
     End If
+
+    If rec_.RecordCount <= 0 Then
+        Recordmap = Empty
+        Exit Function
+    End If
+
+    recRows = rec_.RecordCount - 1
+    recCols = rec_.Fields.Count - 1
+
+    ReDim recmap(recRows, recCols) As String
+    r = 0
+    Do Until rec_.EOF
+        For c = 0 To recCols
+            recmap(r, c) = rec_.Fields(c) & ""
+        Next c
+        r = r + 1
+        Call rec_.MoveNext
+    Loop
 
     Recordmap = recmap
 
