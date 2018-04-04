@@ -15,7 +15,7 @@ Option Explicit
 #Const ISDEBUG = False
 Private Const VERSION_MAJOR As Long = 1
 Private Const VERSION_MINOR As Long = 0
-Private Const VERSION_PATCH As Long = 0
+Private Const VERSION_PATCH As Long = 1
 
 '-----------------------------------------------------------------------------
 ' Enums
@@ -98,7 +98,7 @@ End Enum
 Private Type ProcessResult
     Title       As String
     Number      As Long
-    Desctiption As String
+    Description As String
 End Type
 
 '-----------------------------------------------------------------------------
@@ -150,6 +150,15 @@ Public Property Get IsConnect() As Boolean
     End If
 End Property
 
+' HasRecordset
+Public Property Get HasRecordset() As Boolean
+    If rec_ Is Nothing Then
+        HasRecordset = False
+    Else
+        HasRecordset = (rec_.State = ObjectState.adStateOpen)
+    End If
+End Property
+
 ' IsTrans
 Public Property Get IsTrans() As Boolean
     IsTrans = (trans_ > 0)
@@ -169,6 +178,11 @@ Public Property Get Recordmap() As Variant
     Dim c        As Long    '
 
     If rec_ Is Nothing Then
+        Recordmap = Empty
+        Exit Function
+    End If
+
+    If rec_.State = ObjectState.adStateClosed Then
         Recordmap = Empty
         Exit Function
     End If
@@ -207,7 +221,7 @@ Public Property Get QzInnerMessage() As Object
     Set msg = CreateObject("Scripting.Dictionary")
     msg("Title") = result_.Title
     msg("Number") = result_.Number
-    msg("Desctiption") = result_.Desctiption
+    msg("Description") = result_.Description
 
     Set QzInnerMessage = msg
 
@@ -289,7 +303,7 @@ Public Function Connect(Connection As ConnectionType, Source As String, Optional
     Call con_.Open(conStr)
     result_.Title = "Connect Database Result"
     result_.Number = Err.Number
-    result_.Desctiption = Err.Desctiption
+    result_.Description = Err.Description
     On Error GoTo 0
 
     Set Connect = Me
@@ -353,14 +367,14 @@ End Function
 '*****************************************************************************
 ' [+] Break()
 '*****************************************************************************
-Public Function Break(Optional WithCommit As Boolean = True)
+Public Sub Break(Optional WithCommit As Boolean = True)
     If Me.IsConnect Then
         If Me.IsTrans Then
             Call Me.Commit
         End If
         Call con_.Close
     End If
-End Function
+End Sub
 
 
 '*****************************************************************************
@@ -376,11 +390,13 @@ Private Function CreateRecordset() As Object
     recset.LockType = LockType.adLockBatchOptimistic
 
     Call recset.Open(cmd_)
-    Set recset.ActiveConnection = Nothing
+    If recset.State = ObjectState.adStateOpen Then
+        Set recset.ActiveConnection = Nothing
+    End If
 
     result_.Title = "Create Recordset Result"
     result_.Number = Err.Number
-    result_.Desctiption = Err.Desctiption
+    result_.Description = Err.Description
     On Error GoTo 0
 
     Set CreateRecordset = recset
@@ -402,7 +418,7 @@ Private Function ExecuteCommand(WithCommit As Boolean) As Long
     Call cmd_.Execute(afct, params_.Items)
     result_.Title = "Execute Command Result"
     result_.Number = Err.Number
-    result_.Desctiption = Err.Desctiption
+    result_.Description = Err.Description
     On Error GoTo 0
 
     If WithCommit Then
@@ -471,5 +487,3 @@ Private Function CreateCommandText(Statement As String) As String
     CreateCommandText = prmParser_.Replace(Statement, "?")
 
 End Function
-
-
