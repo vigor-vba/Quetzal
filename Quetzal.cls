@@ -1,21 +1,12 @@
-VERSION 1.0 CLASS
-BEGIN
-  MultiUse = -1  'True
-END
-Attribute VB_Name = "Quetzal"
-Attribute VB_GlobalNameSpace = False
-Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
-Attribute VB_Exposed = False
-'*****************************************************************************
+'#############################################################################
 ' Quetzal: A simple ADO handler.
 ' MIT License | github.com/vigor-vba/Quetzal
-'*****************************************************************************
+'#############################################################################
 Option Explicit
 #Const ISDEBUG = False
 Private Const VERSION_MAJOR As Long = 1
-Private Const VERSION_MINOR As Long = 0
-Private Const VERSION_PATCH As Long = 1
+Private Const VERSION_MINOR As Long = 1
+Private Const VERSION_PATCH As Long = 0
 
 '-----------------------------------------------------------------------------
 ' Enums
@@ -110,6 +101,7 @@ Private rec_        As Object          ' ADODB.Recordset
 Private prmParser_  As Object          ' VBScript.RegExp
 Private statement_  As String          ' Query statement
 Private params_     As Object          ' Parameter container
+Private prmMap_     As Collection      ' Parameter map
 Private affected_   As Long            ' Affected rows
 Private stmtClass_  As StatementClass  ' Statement class
 Private trans_      As Long            ' Transaction level
@@ -117,7 +109,7 @@ Private result_     As ProcessResult   ' Process result
 
 
 '*****************************************************************************
-' [+] Properties
+' Properties
 '*****************************************************************************
 ' Version
 Public Property Get Version() As String
@@ -235,7 +227,7 @@ Private Sub Class_Initialize()
     Set prmParser_ = CreateObject("VBScript.RegExp")
     prmParser_.Global = True
     prmParser_.IgnoreCase = False
-    prmParser_.Pattern = ":(\w*)"
+    prmParser_.Pattern = ":(\w+)(?=(([^'#]*'){2})*[^'#]*$)"
 End Sub
 
 
@@ -415,7 +407,7 @@ Private Function ExecuteCommand(WithCommit As Boolean) As Long
     End If
 
     On Error Resume Next
-    Call cmd_.Execute(afct, params_.Items)
+    Call cmd_.Execute(afct, CreateParameters)
     result_.Title = "Execute Command Result"
     result_.Number = Err.Number
     result_.Description = Err.Description
@@ -473,6 +465,7 @@ Private Function CreateCommandText(Statement As String) As String
     Dim pName   As String  ' Parameter name
 
     Set params_ = CreateObject("Scripting.Dictionary")
+    Set prmMap_ = New Collection
 
     Set matches = prmParser_.Execute(Statement)
     For Each mch In matches
@@ -481,9 +474,32 @@ Private Function CreateCommandText(Statement As String) As String
             pName = Format(params_.Count + 1, "P000")
         End If
 
-        Call params_.Add(pName, "")
+        params_(pName) = ""
+        Call prmMap_.Add(pName)
     Next
 
     CreateCommandText = prmParser_.Replace(Statement, "?")
 
+End Function
+
+
+'*****************************************************************************
+' [-] CreateParameters()
+'*****************************************************************************
+Private Function CreateParameters() As Variant
+    Dim prms    As Variant
+    Dim cntPrms As Long
+    Dim i       As Long
+
+    cntPrms = prmMap_.Count
+    If cntPrms <= 0 Then
+        CreateParameters = Null
+    End If
+
+    ReDim prms(cntPrms - 1) As Variant
+    For i = 1 To cntPrms
+        prms(i -1) = params_(prmMap_(i))
+    Next i
+
+    CreateParameters = prms
 End Function
