@@ -1,3 +1,12 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "Quetzal"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
 '#############################################################################
 ' Quetzal: A simple ADO handler.
 ' MIT License | github.com/vigor-vba/Quetzal
@@ -227,7 +236,7 @@ Private Sub Class_Initialize()
     Set prmParser_ = CreateObject("VBScript.RegExp")
     prmParser_.Global = True
     prmParser_.IgnoreCase = False
-    prmParser_.Pattern = ":(\w+)(?=(([^'#]*'){2})*[^'#]*$)"
+    prmParser_.Pattern = ":(\w+)(?=(([^'#]*['#]){2})*[^'#]*$)"
 End Sub
 
 
