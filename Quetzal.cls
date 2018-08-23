@@ -95,7 +95,7 @@ End Enum
 '-----------------------------------------------------------------------------
 ' Types
 '-----------------------------------------------------------------------------
-Private Type ProcessResult
+Private Type Exception
     Title       As String
     Number      As Long
     Description As String
@@ -104,17 +104,17 @@ End Type
 '-----------------------------------------------------------------------------
 ' Fields
 '-----------------------------------------------------------------------------
-Private con_        As Object          ' ADODB.Connection
-Private cmd_        As Object          ' ADODB.Command
-Private rec_        As Object          ' ADODB.Recordset
-Private prmParser_  As Object          ' VBScript.RegExp
-Private statement_  As String          ' Query statement
-Private params_     As Object          ' Parameter container
-Private prmMap_     As Collection      ' Parameter map
-Private affected_   As Long            ' Affected rows
-Private stmtClass_  As StatementClass  ' Statement class
-Private trans_      As Long            ' Transaction level
-Private result_     As ProcessResult   ' Process result
+Private con_       As Object          ' ADODB.Connection
+Private cmd_       As Object          ' ADODB.Command
+Private rec_       As Object          ' ADODB.Recordset
+Private prmParser_ As Object          ' VBScript.RegExp
+Private statement_ As String          ' Query statement
+Private params_    As Object          ' Parameter container
+Private prmMap_    As Collection      ' Parameter map
+Private affected_  As Long            ' Affected rows
+Private stmtClass_ As StatementClass  ' Statement class
+Private trans_     As Long            ' Transaction level
+Private exception_ As Exception       ' Process result
 
 
 '*****************************************************************************
@@ -215,19 +215,6 @@ Public Property Get AffectedRows() As Long
     AffectedRows = affected_
 End Property
 
-' QzInnerMessage
-Public Property Get QzInnerMessage() As Object
-    Dim msg As Object
-
-    Set msg = CreateObject("Scripting.Dictionary")
-    msg("Title") = result_.Title
-    msg("Number") = result_.Number
-    msg("Description") = result_.Description
-
-    Set QzInnerMessage = msg
-
-End Property
-
 
 '*****************************************************************************
 ' Class_Initialize()
@@ -302,9 +289,9 @@ Public Function Connect(Connection As ConnectionType, Source As String, Optional
     On Error Resume Next
     Set con_ = CreateObject("ADODB.Connection")
     Call con_.Open(conStr)
-    result_.Title = "Connect Database Result"
-    result_.Number = Err.Number
-    result_.Description = Err.Description
+    exception_.Title = "Connect Database Result"
+    exception_.Number = Err.Number
+    exception_.Description = Err.Description
     On Error GoTo 0
 
     Set Connect = Me
@@ -315,7 +302,7 @@ End Function
 '*****************************************************************************
 ' [+] Query()
 '*****************************************************************************
-Public Function Query(Optional QueryStatement As String, Optional WithCommit As Boolean = True) As Quetzal
+Public Function Query(Optional QueryStatement As String, Optional WithCommit As Boolean = False) As Quetzal
     If Not Me.IsConnect Then
         GoTo Suspend
     End If
@@ -340,35 +327,29 @@ End Function
 '*****************************************************************************
 ' [+] Commit()
 '*****************************************************************************
-Public Function Commit() As Quetzal
+Public Sub Commit()
     If Me.IsConnect And Me.IsTrans Then
         Call con_.CommitTrans
         trans_ = 0
     End If
-
-    Set Commit = Me
-
-End Function
+End Sub
 
 
 '*****************************************************************************
 ' [+] Rollback()
 '*****************************************************************************
-Public Function Rollback() As Quetzal
+Public Sub Rollback()
     If Me.IsConnect And Me.IsTrans Then
         Call con_.RollbackTrans
         trans_ = 0
     End If
-
-    Set Rollback = Me
-
-End Function
+End Sub
 
 
 '*****************************************************************************
 ' [+] Break()
 '*****************************************************************************
-Public Sub Break(Optional WithCommit As Boolean = True)
+Public Sub Break(Optional WithCommit As Boolean = False)
     If Me.IsConnect Then
         If Me.IsTrans Then
             Call Me.Commit
@@ -395,9 +376,9 @@ Private Function CreateRecordset() As Object
         Set recset.ActiveConnection = Nothing
     End If
 
-    result_.Title = "Create Recordset Result"
-    result_.Number = Err.Number
-    result_.Description = Err.Description
+    exception_.Title = "Create Recordset Result"
+    exception_.Number = Err.Number
+    exception_.Description = Err.Description
     On Error GoTo 0
 
     Set CreateRecordset = recset
@@ -417,9 +398,9 @@ Private Function ExecuteCommand(WithCommit As Boolean) As Long
 
     On Error Resume Next
     Call cmd_.Execute(afct, CreateParameters)
-    result_.Title = "Execute Command Result"
-    result_.Number = Err.Number
-    result_.Description = Err.Description
+    exception_.Title = "Execute Command Result"
+    exception_.Number = Err.Number
+    exception_.Description = Err.Description
     On Error GoTo 0
 
     If WithCommit Then
@@ -507,7 +488,7 @@ Private Function CreateParameters() As Variant
 
     ReDim prms(cntPrms - 1) As Variant
     For i = 1 To cntPrms
-        prms(i -1) = params_(prmMap_(i))
+        prms(i - 1) = params_(prmMap_(i))
     Next i
 
     CreateParameters = prms
