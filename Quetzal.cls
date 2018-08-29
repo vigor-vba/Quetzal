@@ -15,7 +15,7 @@ Option Explicit
 #Const ISDEBUG = False
 Private Const VERSION_MAJOR As Long = 1
 Private Const VERSION_MINOR As Long = 1
-Private Const VERSION_PATCH As Long = 0
+Private Const VERSION_PATCH As Long = 1
 
 '-----------------------------------------------------------------------------
 ' Enums
@@ -325,38 +325,38 @@ End Function
 
 
 '*****************************************************************************
-' [+] Commit()
-'*****************************************************************************
-Public Sub Commit()
-    If Me.IsConnect And Me.IsTrans Then
-        Call con_.CommitTrans
-        trans_ = 0
-    End If
-End Sub
-
-
-'*****************************************************************************
-' [+] Rollback()
-'*****************************************************************************
-Public Sub Rollback()
-    If Me.IsConnect And Me.IsTrans Then
-        Call con_.RollbackTrans
-        trans_ = 0
-    End If
-End Sub
-
-
-'*****************************************************************************
 ' [+] Break()
 '*****************************************************************************
 Public Sub Break(Optional WithCommit As Boolean = False)
     If Me.IsConnect Then
-        If Me.IsTrans Then
+        If WithCommit And Me.IsTrans Then
             Call Me.Commit
         End If
         Call con_.Close
     End If
 End Sub
+
+
+'*****************************************************************************
+' [+] Commit()
+'*****************************************************************************
+Public Function Commit() As Boolean
+    If Me.IsConnect And Me.IsTrans Then
+        Commit = con_.CommitTrans
+        trans_ = 0
+    End If
+End Function
+
+
+'*****************************************************************************
+' [+] Rollback()
+'*****************************************************************************
+Public Function Rollback() As Boolean
+    If Me.IsConnect And Me.IsTrans Then
+        Rollback = con_.RollbackTrans
+        trans_ = 0
+    End If
+End Function
 
 
 '*****************************************************************************
@@ -484,6 +484,7 @@ Private Function CreateParameters() As Variant
     cntPrms = prmMap_.Count
     If cntPrms <= 0 Then
         CreateParameters = Null
+        Exit Function
     End If
 
     ReDim prms(cntPrms - 1) As Variant
